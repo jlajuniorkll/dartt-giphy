@@ -1,7 +1,11 @@
 import 'dart:convert';
 
+import 'package:dartt_giphy/ui/gif_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_downloader/image_downloader.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:transparent_image/transparent_image.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -115,11 +119,35 @@ class _HomePageState extends State<HomePage> {
         itemBuilder: (context, index) {
           if (_search == null || index < snapshot.data["data"].length) {
             return GestureDetector(
-              child: Image.network(
-                snapshot.data["data"][index]["images"]["fixed_height"]["url"],
+              child: FadeInImage.memoryNetwork(
+                placeholder: kTransparentImage,
+                image: snapshot.data["data"][index]["images"]["fixed_height"]
+                    ["url"],
                 height: 300.0,
                 fit: BoxFit.cover,
               ),
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            GifPage(gifData: snapshot.data["data"][index])));
+              },
+              onLongPress: () async {
+                String url = snapshot.data["data"][index]["images"]
+                    ["fixed_height"]["url"];
+                try {
+                  // Saved with this method.
+                  var imageId = await ImageDownloader.downloadImage(url);
+                  if (imageId == null) {
+                    return;
+                  }
+                  var path = await ImageDownloader.findPath(imageId);
+                  await Share.shareFiles([path!]);
+                } catch (error) {
+                  print(error);
+                }
+              },
             );
           } else {
             return Container(
